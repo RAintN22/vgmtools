@@ -1627,24 +1627,10 @@ void k007232_write(UINT8 offset, UINT8 data)
     int ch;
     K007232_Channel* v;
 
-    if(offset >= 0x10 && offset <= 0x15) // Handle bank/volume registers
+    if(offset >= 0x14 && offset <= 0x15) // Handle bank/volume registers
     {
         switch(offset)
         {
-            // Volume controls
-            case 0x10: // Channel 0 Left
-                chip->channel[0].vol[0] = data;
-                break;
-            case 0x11: // Channel 0 Right
-                chip->channel[0].vol[1] = data;
-                break;
-            case 0x12: // Channel 1 Left
-                chip->channel[1].vol[0] = data;
-                break;
-            case 0x13: // Channel 1 Right
-                chip->channel[1].vol[1] = data;
-                break;
-            
             // Bank registers
             case 0x14: // Channel 0 Bank
                 chip->channel[0].bank = data << 17;
@@ -1667,21 +1653,21 @@ void k007232_write(UINT8 offset, UINT8 data)
 
     switch(offset - reg_base)
     {
-        case 0x00: case 0x06: // Pitch LSB
-        case 0x01: case 0x07: // Pitch MSB
+        case 0x00: // Pitch LSB
+        case 0x01:// Pitch MSB
             v->step = ((chip->wreg[reg_base + 1] & 0x0F) << 8) | 
                        chip->wreg[reg_base];
             break;
 
-        case 0x02: case 0x08: // Start LSB
-        case 0x03: case 0x09: // Start MID
-        case 0x04: case 0x0A: // Start MSB
+        case 0x02: // Start LSB
+        case 0x03: // Start MID
+        case 0x04: // Start MSB
             v->start = ((chip->wreg[reg_base + 4] & 0x01) << 16) |
                        (chip->wreg[reg_base + 3] << 8) |
                         chip->wreg[reg_base + 2];
             break;
 
-        case 0x05: case 0x0B: // Key On
+        case 0x05: // Key On
         {
             v->play = 1;
             v->addr = v->start;
@@ -1690,7 +1676,7 @@ void k007232_write(UINT8 offset, UINT8 data)
             // Mark ROM usage
             if(chip->ROMData && chip->ROMUsage)
             {
-                UINT32 current = v->bank + (v->addr & K007232_PCM_MAX);
+                UINT32 current = v->bank + (v->addr);
                 UINT32 end = current;
                 
                 // Find terminator (0x80)
