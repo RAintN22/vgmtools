@@ -47,6 +47,7 @@ void es5503_write(UINT8 Register, UINT8 Data);
 void ymf278b_write(UINT8 Port, UINT8 Register, UINT8 Data);
 void es550x_w(UINT8 Offset, UINT8 Data);
 void es550x_w16(UINT8 Offset, UINT16 Data);
+void k007232_write(UINT8 offset, UINT8 data);
 void write_rom_data(UINT8 ROMType, UINT32 ROMSize, UINT32 DataStart, UINT32 DataLength,
 					const UINT8* ROMData);
 UINT32 GetROMMask(UINT8 ROMType, UINT8** MaskData);
@@ -149,7 +150,7 @@ int main(int argc, char* argv[])
 		! VGMHead.lngHzQSound && ! VGMHead.lngHzUPD7759 && ! VGMHead.lngHzMultiPCM &&
 		! VGMHead.lngHzNESAPU && ! VGMHead.lngHzES5503 && ! VGMHead.lngHzES5506 &&
 		! VGMHead.lngHzGA20 && ! VGMHead.lngHzX1_010 && ! VGMHead.lngHzC352 &&
-		! VGMHead.lngHzYMF278B)
+		! VGMHead.lngHzYMF278B && ! VGMHead.lngHzK007232)
 	{
 		printf("No chips with Sample-ROM used!\n");
 		ErrVal = 2;
@@ -481,6 +482,11 @@ static void FindUsedROMData(void)
 			case 0xE0:	// Seek to PCM Data Bank Pos
 				CmdLen = 0x05;
 				break;
+			case 0x41:	// K007232 write
+				SetChipSet((VGMPnt[0x01] & 0x80) >> 7);
+				k007232_write(VGMPnt[0x01] & 0x7F, VGMPnt[0x02]);
+				CmdLen = 0x03;
+				break;
 			case 0x4F:	// GG Stereo
 				CmdLen = 0x02;
 				break;
@@ -755,6 +761,9 @@ char* GetROMRegionText(UINT8 ROM_ID)
 		break;
 	case 0x93:	// GA20
 		RetStr = "GA20";
+		break;
+	case 0x94:	// K007232
+		RetStr = "K007232";
 		break;
 	case 0xC0:	// RF5C68 RAM
 		RetStr = "RF5C68";
