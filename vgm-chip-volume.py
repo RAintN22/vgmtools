@@ -17,8 +17,18 @@ import gzip
 import struct
 
 if len(sys.argv) < 3:
-	print("Usage: {} input.vgm output.vgm".format(sys.argv[0]))
-	sys.exit(0)
+    print("Usage: {} [--mono] input.vgm output.vgm".format(sys.argv[0]))
+    sys.exit(0)
+
+mono_mode = True
+args = sys.argv[1:]
+if '--mono' in args:
+    mono_mode = True
+    args.remove('--mono')
+if len(args) < 2:
+    print("Usage: {} [--mono] input.vgm output.vgm".format(sys.argv[0]))
+    sys.exit(0)
+input_file, output_file = args[0], args[1]
 
 CHIPID_SN76496	= 0x00
 CHIPID_YM2413	= 0x01
@@ -247,6 +257,59 @@ if gd3Ofs != 0:
 	WriteRelOfs(indata, 0x14, gd3Ofs)	# GD3 offset
 WriteRelOfs(indata, 0x04, len(indata))	# EOF offset
 
+
+if mono_mode:
+    dataOfs = ReadRelOfs(indata, 0x34)
+    cmd_stream = indata[dataOfs:]
+    processed_cmds = bytearray()
+    i = 0
+
+    cmd_lengths = {
+        0x40: 1, 0x41: 3, 0x42: 3, 0x43: 3, 0x44: 3, 0x45: 3, 0x46: 3, 0x47: 3, 0x48: 3,
+        0x49: 3, 0x4A: 3, 0x4B: 3, 0x4C: 3, 0x4D: 3, 0x4E: 3, 0x4F: 3, 0x50: 1,
+        0x51: 3, 0x52: 3, 0x53: 3, 0x54: 3, 0x55: 3, 0x56: 3, 0x57: 3, 0x58: 3,
+        0x59: 3, 0x5A: 3, 0x5B: 3, 0x5C: 3, 0x5D: 3, 0x5E: 3, 0x5F: 3,
+        0x61: 2, 0x62: 1, 0x63: 1, 0x66: 1, 0x67: 0, 0x68: 1,
+        0x70: 1, 0x71: 1, 0x72: 1, 0x73: 1, 0x74: 1, 0x75: 1, 0x76: 1, 0x77: 1,
+        0x78: 1, 0x79: 1, 0x7A: 1, 0x7B: 1, 0x7C: 1, 0x7D: 1, 0x7E: 1, 0x7F: 1,
+        0x80: 1, 0x81: 1, 0x82: 1, 0x83: 1, 0x84: 1, 0x85: 1, 0x86: 1, 0x87: 1,
+        0x88: 1, 0x89: 1, 0x8A: 1, 0x8B: 1, 0x8C: 1, 0x8D: 1, 0x8E: 1, 0x8F: 1,
+        0x90: 4, 0x91: 4, 0x92: 6, 0x93: 2, 0x94: 2, 0x95: 3, 0xE0: 4,
+    }
+
+    while i < len(cmd_stream):
+        cmd = cmd_stream[i]
+        length = cmd_lengths.get(cmd, 1)
+        
+        # Handle PCM data block (0x67)
+        if cmd == 0x67:
+            if i + 7 > len(cmd_stream):
+                break
+            data_size = struct.unpack_from("<I", cmd_stream, i + 3)[0]
+            length = 7 + data_size
+        
+        if i + length > len(cmd_stream):
+            break
+        
+        current_cmd = cmd_stream[i:i+length]
+        if cmd == 0x41 and length >= 3:
+            reg = current_cmd[1]
+            val = current_cmd[2]
+            if reg == 0x10:  # Ch0 Left
+                processed_cmds.extend(current_cmd)
+                processed_cmds.extend([0x41, 0x11, val])  # Mirror to Ch0 Right
+            elif reg == 0x13:  # Ch1 Right
+                processed_cmds.extend(current_cmd)
+                processed_cmds.extend([0x41, 0x12, val])  # Mirror to Ch1 Left
+            elif reg in (0x11, 0x12):  # Skip existing Right/Left writes
+                pass
+            else:
+                processed_cmds.extend(current_cmd)
+        else:
+            processed_cmds.extend(current_cmd)
+        i += length
+    indata = indata[:dataOfs] + processed_cmds
+    WriteRelOfs(indata, 0x04, len(indata))
 # write VGM, with optional GZip compression
 if isVGZ:
 	with open(sys.argv[2], "wb") as f:
@@ -255,3 +318,6 @@ if isVGZ:
 else:
 	with open(sys.argv[2], "wb") as f:
 		f.write(indata) 
+        
+        
+
