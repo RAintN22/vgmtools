@@ -337,6 +337,7 @@ static void ReadVGMData(void)
 				case 0x40:
 					CmdLen = 0x02;
 					break;
+				case 0x41:
 				case 0x50:
 				case 0xA0:
 				case 0xB0:
@@ -563,6 +564,7 @@ static void ReadVGMData(void)
 				case 0x40:
 					CmdLen = 0x02;
 					break;
+				case 0x41:
 				case 0x50:
 				case 0xA0:
 				case 0xB0:
@@ -727,7 +729,7 @@ static void FindEqualitiesVGM(void)
 		CurCmd += STEP_SIZE;
 	}
 	if (! SilentMode)
-		fprintf(stderr, "%*s\r", 64, "");
+		fprintf(stderr, "\t\t\t\t\r");
 	fprintf(stderr, "Done.\n");
 	if (! SilentMode)
 		fprintf(stderr, "\n");
@@ -770,8 +772,6 @@ static bool EqualityCheck(UINT32 CmpCmd, UINT32 SrcCmd, UINT32 CmdCount)
 	if (SrcCmd + CmdCount >= VGMCmdCount)
 		BlkFlags |= 0x02;	// Notify user that it matched until the End of File
 
-	if (! SilentMode)
-		fprintf(stderr, "%*s\r", 64, "");
 	if (LabelMode)
 	{
 		LabelID ++;

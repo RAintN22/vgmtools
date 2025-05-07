@@ -867,6 +867,11 @@ static void CompressVGMData(void)
 				//WriteEvent = qsound_write(VGMPnt[0x03], (VGMPnt[0x01] << 8) | (VGMPnt[0x02] << 0));
 				CmdLen = 0x04;
 				break;
+			case 0x41:	// K007232 write
+				//SetChipSet((VGMPnt[0x01] & 0x80) >> 7);
+			//	WriteEvent = chip_reg_write(0x1D, CurChip, 0x00, VGMPnt[0x01] & 0x7F, VGMPnt[0x02]);
+				CmdLen = 0x03;
+				break;
 			case 0xc8:	// X1-010 write
 				TempSht = VGMPnt[0x01]<<8 | VGMPnt[0x02]<<0;
 				TempByt = VGMPnt[0x03];
