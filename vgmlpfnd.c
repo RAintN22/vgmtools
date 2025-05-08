@@ -330,6 +330,9 @@ static void ReadVGMData(void)
 			case 0x95:	// DAC Ctrl: Play Block (small)
 				CmdLen = 0x05;
 				break;
+			case 0x41: // K007232 write
+				CmdLen = 0x03;
+				break;
 			default:
 				switch(Command & 0xF0)
 				{
@@ -337,7 +340,6 @@ static void ReadVGMData(void)
 				case 0x40:
 					CmdLen = 0x02;
 					break;
-				case 0x41:
 				case 0x50:
 				case 0xA0:
 				case 0xB0:
@@ -557,6 +559,9 @@ static void ReadVGMData(void)
 			case 0x95:	// DAC Ctrl: Play Block (small)
 				CmdLen = 0x05;
 				break;
+        case 0x41: // K007232 write
+            CmdLen = 0x03;
+            break;
 			default:
 				switch(Command & 0xF0)
 				{
@@ -564,7 +569,6 @@ static void ReadVGMData(void)
 				case 0x40:
 					CmdLen = 0x02;
 					break;
-				case 0x41:
 				case 0x50:
 				case 0xA0:
 				case 0xB0:

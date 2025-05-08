@@ -4156,6 +4156,8 @@ void k007232_write(char* TempStr, UINT8 offset, UINT8 data)
     UINT8 ch = (offset >= 6 && offset < 0x0C) ? 1 : 0; // Channel 0 or 1
     UINT8 reg = offset % 6; // offset offset within the channel
 
+	WriteChipID(0x2A);
+	
     if (offset < 0x06 || (offset >= 6 && offset < 0x0C))
     {
         // offsets for pitch, start address, and key on/off
@@ -4218,6 +4220,9 @@ void k007232_write(char* TempStr, UINT8 offset, UINT8 data)
         case 0x15: // Bankswitch for Channel 1
             sprintf(WriteStr, "Bankswitch (Ch1): 0x%02X", data);
             break;
+		case 0x1F: // Special command for k007232 read
+			sprintf(WriteStr, "Chip read: 0x%2X", data);
+			break;
         default:
             sprintf(WriteStr, "Unknown Register 0x%02X: data 0x%02X", offset, data);
             break;
