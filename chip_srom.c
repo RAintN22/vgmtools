@@ -1627,25 +1627,47 @@ void k007232_write(UINT8 offset, UINT8 data)
     int ch;
     K007232_Channel* v;
 
-    if(offset >= 0x14 && offset <= 0x15) // Handle bank/volume registers
-    {
-        switch(offset)
-        {
-            // Bank registers
-            case 0x14: // Channel 0 Bank
+    // Handle register 0x1F as a special "read" trigger
+    if (offset == 0x1F) {
+        // "data" is the original offset; treat as a read at that offset
+        if (data == 5 || data == 11) {
+            ch = (data >= 6) ? 1 : 0;
+            v = &chip->channel[ch];
+            v->play = 1;
+            v->addr = v->start;
+            v->counter = 0x1000;
+
+            // Mark ROM usage as for a key-on
+            if (chip->ROMData && chip->ROMUsage) {
+                UINT32 current = v->bank + v->addr;
+                UINT32 end = current;
+                while (end < chip->ROMSize) {
+                    if (chip->ROMData[end] & 0x80) break;
+                    end++;
+                }
+                if (end < chip->ROMSize) end++; // include terminator
+                for (UINT32 addr = current; addr < end && addr < chip->ROMSize; addr++)
+                    chip->ROMUsage[addr] |= 0x01;
+            }
+        }
+        return;
+    }
+
+    if(offset >= 0x14 && offset <= 0x15) {
+        switch(offset) {
+            case 0x14:
                 chip->channel[0].bank = data << 17;
                 break;
-            case 0x15: // Channel 1 Bank
+            case 0x15:
                 chip->channel[1].bank = data << 17;
                 break;
         }
         return;
     }
 
-    // Handle channel-specific registers
     ch = offset / 6;
     if(ch >= K007232_PCM_MAX) return;
-    
+
     v = &chip->channel[ch];
     const int reg_base = ch * 6;
 
@@ -1654,11 +1676,10 @@ void k007232_write(UINT8 offset, UINT8 data)
     switch(offset - reg_base)
     {
         case 0x00: // Pitch LSB
-        case 0x01:// Pitch MSB
-            v->step = ((chip->wreg[reg_base + 1] & 0x0F) << 8) | 
+        case 0x01: // Pitch MSB
+            v->step = ((chip->wreg[reg_base + 1] & 0x0F) << 8) |
                        chip->wreg[reg_base];
             break;
-
         case 0x02: // Start LSB
         case 0x03: // Start MID
         case 0x04: // Start MSB
@@ -1666,22 +1687,18 @@ void k007232_write(UINT8 offset, UINT8 data)
                        (chip->wreg[reg_base + 3] << 8) |
                         chip->wreg[reg_base + 2];
             break;
-
         case 0x05: // Key On
-        {
             v->play = 1;
             v->addr = v->start;
             v->counter = 0x1000;
 
             // Mark ROM usage
-            if(chip->ROMData && chip->ROMUsage)
-            {
+            if(chip->ROMData && chip->ROMUsage) {
                 UINT32 current = v->bank + (v->addr);
                 UINT32 end = current;
-                
+
                 // Find terminator (0x80)
-                while(end < chip->ROMSize)
-                {
+                while(end < chip->ROMSize) {
                     if(chip->ROMData[end] & 0x80) break;
                     end++;
                 }
@@ -1689,18 +1706,14 @@ void k007232_write(UINT8 offset, UINT8 data)
 
                 // Mark used bytes
                 for(UINT32 addr = current; addr < end && addr < chip->ROMSize; addr++)
-                {
                     chip->ROMUsage[addr] |= 0x01;
-                }
             }
             break;
-        }
-
         case 0x0D: // Loop Enable
             chip->loop_en = data;
             break;
     }
-	return;
+    return;
 }
 
 static UINT32 c140_sample_addr(C140_DATA* chip, UINT8 adr_msb, UINT8 adr_lsb,
